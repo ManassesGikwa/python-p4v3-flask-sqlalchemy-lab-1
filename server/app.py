@@ -1,7 +1,7 @@
 # server/app.py
 #!/usr/bin/env python3
 
-from flask import Flask, make_response
+from flask import Flask, make_response, jsonify, request
 from flask_migrate import Migrate
 
 from models import db, Earthquake
@@ -21,6 +21,41 @@ def index():
     return make_response(body, 200)
 
 # Add views here
+
+@app.route('/earthquakes/<int:id>')
+def get_earthquake_by_id(id):
+    earthquake = Earthquake.query.filter_by(id=id).first()
+    if earthquake:
+        return jsonify({
+            'id': earthquake.id,
+            'magnitude': earthquake.magnitude,
+            'location': earthquake.location,
+            'year': earthquake.year
+        }), 200
+    else:
+        return jsonify({'message': f'Earthquake {id} not found.'}), 404
+
+@app.route('/earthquakes/magnitude/<float:magnitude>')
+def get_earthquakes_by_magnitude(magnitude):
+    # Querys the database to get earthquakes with magnitude greater than or equal to the specified value
+    matching_earthquakes = Earthquake.query.filter(Earthquake.magnitude >= magnitude).all()
+
+    # Counts the number of matching earthquakes
+    count = len(matching_earthquakes)
+
+    # Prepares a list of earthquake data
+    earthquakes_data = [{
+        'id': earthquake.id,
+        'location': earthquake.location,
+        'magnitude': earthquake.magnitude,
+        'year': earthquake.year
+    } for earthquake in matching_earthquakes]
+
+    # Returns JSON response containing the count and earthquake data
+    return jsonify({
+        'count': count,
+        'quakes': earthquakes_data
+    }), 200
 
 
 if __name__ == '__main__':
